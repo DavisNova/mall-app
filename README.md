@@ -59,6 +59,9 @@
 - 订单管理
 - 客服系统管理
 
+首页前端显示的所有商品均从后端数据库中拿取商品数据然后进行展示
+需要后端有对应的商品数据库,商品的信息参考当前的前端配置
+
 ## 技术栈
 
 ### 前端技术
@@ -71,11 +74,10 @@
 - Vant UI 移动端组件库
 
 ### 后端技术
-- Node.js
-- Express/Koa
-- WebSocket
-- MongoDB
-- Redis (用于会话管理和缓存)
+- Node.js + Express
+- TypeScript
+- MySQL 数据库
+- WebSocket 实时通讯
 
 ## 系统架构
 
@@ -241,27 +243,19 @@ npm run build
 ## 项目结构
 ```
 mall-app/
-├── components/      # 组件目录
-│   ├── common/     # 通用组件
-│   ├── layout/     # 布局组件
-│   └── business/   # 业务组件
-├── pages/          # 页面目录
-│   ├── index.vue   # 首页
-│   ├── product/    # 商品相关页面
-│   ├── cart/       # 购物车页面
-│   ├── order/      # 订单相关页面
-│   ├── chat/       # 聊天相关页面
-│   └── admin/      # 后台管理页面
-├── layouts/        # 布局目录
-├── stores/         # 状态管理
-├── composables/    # 组合式函数
-├── server/         # 服务端API
-│   ├── api/        # API路由
-│   ├── models/     # 数据模型
-│   ├── config/     # 配置文件
-│   └── utils/      # 工具函数
-├── public/         # 静态资源
-└── types/          # TypeScript类型
+├── docs/                    # 项目文档
+│   ├── api.md              # API接口文档
+│   ├── database.md         # 数据库设计文档
+│   └── init_data.sql       # 初始数据
+├── server/                  # 后端服务
+│   ├── api/                # API路由
+│   ├── db/                 # 数据库配置
+│   └── websocket.ts        # WebSocket服务
+├── components/             # 前端组件
+├── pages/                 # 页面文件
+├── stores/                # 状态管理
+├── layouts/               # 布局文件
+└── public/                # 静态资源
 ```
 
 ## 性能优化
@@ -296,17 +290,156 @@ mall-app/
    - 日志记录
    - 防SQL注入
 
-## 部署说明
-1. 开发环境
-   - Node.js >= 16.10
-   - MongoDB >= 4.4
-   - Redis >= 6.0
+## 部署指南（宝塔面板）
 
-2. 部署步骤
-   - 环境准备
-   - 依赖安装
-   - 配置修改
-   - 构建部署
+### 1. 环境要求
+- Node.js >= 16
+- MySQL >= 8.0
+- Nginx
+- PM2
+
+### 2. 宝塔面板配置步骤
+
+#### 2.1 安装必要软件
+1. 在宝塔面板中安装以下软件：
+   - Nginx
+   - MySQL
+   - PM2管理器
+   - Node.js版本管理器
+
+2. 使用Node.js版本管理器安装Node.js 16：
+   ```bash
+   # 在宝塔终端中执行
+   n install 16
+   ```
+
+#### 2.2 创建数据库
+1. 在宝塔面板中打开"数据库"
+2. 创建MySQL数据库：
+   - 数据库名：mall
+   - 用户名：mall
+   - 密码：mall
+   - 访问权限：所有人
+   
+3. 导入数据库文件：
+   ```sql
+   # 在数据库管理界面导入以下文件：
+   docs/database.md   # 创建表结构
+   docs/init_data.sql # 导入初始数据
+   ```
+
+#### 2.3 部署后端服务
+1. 在宝塔面板中添加网站：
+   - 域名：api.你的域名.com（或者使用子目录 /api）
+   - 网站目录：/www/wwwroot/mall-app/server
+   
+2. 克隆项目：
+   ```bash
+   cd /www/wwwroot/
+   git clone https://github.com/DavisNova/mall-app.git
+   cd mall-app/server
+   ```
+
+3. 安装依赖：
+   ```bash
+   npm install
+   ```
+
+4. 创建环境配置文件：
+   ```bash
+   # 创建 .env 文件
+   cat > .env << EOF
+   DB_HOST=localhost
+   DB_USER=mall
+   DB_PASSWORD=mall
+   DB_NAME=mall
+   DB_PORT=3306
+   PORT=3000
+   NODE_ENV=production
+   EOF
+   ```
+
+5. 使用PM2启动服务：
+   ```bash
+   # 创建 ecosystem.config.js
+   cat > ecosystem.config.js << EOF
+   module.exports = {
+     apps: [{
+       name: 'mall-server',
+       script: 'npm',
+       args: 'start',
+       env: {
+         NODE_ENV: 'production'
+       }
+     }]
+   }
+   EOF
+   
+   # 启动服务
+   pm2 start ecosystem.config.js
+   ```
+
+#### 2.4 部署前端服务
+1. 在宝塔面板中添加网站：
+   - 域名：你的域名.com
+   - 网站目录：/www/wwwroot/mall-app/.output/public
+
+2. 构建前端项目：
+   ```bash
+   cd /www/wwwroot/mall-app
+   npm install
+   npm run build
+   ```
+
+3. 配置Nginx：
+   ```nginx
+   # 在网站设置中修改Nginx配置
+   server {
+     listen 80;
+     server_name 你的域名.com;
+     
+     # 前端文件
+     location / {
+       root /www/wwwroot/mall-app/.output/public;
+       index index.html;
+       try_files $uri $uri/ /index.html;
+     }
+     
+     # API代理
+     location /api/ {
+       proxy_pass http://localhost:3000/;
+       proxy_http_version 1.1;
+       proxy_set_header Upgrade $http_upgrade;
+       proxy_set_header Connection 'upgrade';
+       proxy_set_header Host $host;
+       proxy_cache_bypass $http_upgrade;
+     }
+   }
+   ```
+
+### 3. 更新部署
+当需要更新代码时：
+```bash
+cd /www/wwwroot/mall-app
+git pull
+npm install
+npm run build
+
+cd server
+npm install
+pm2 restart mall-server
+```
+
+### 4. 注意事项
+1. 确保所有端口（80, 3000）在防火墙中已开放
+2. 配置SSL证书以启用HTTPS
+3. 定期备份数据库
+4. 检查日志：`pm2 logs mall-server`
+
+### 5. 常见问题
+1. 502错误：检查PM2服务是否正常运行
+2. 数据库连接失败：检查数据库配置和权限
+3. 静态资源404：检查Nginx配置和目录权限
 
 ## 测试规范
 1. 单元测试
@@ -326,3 +459,78 @@ mall-app/
 2. 提交信息遵循Conventional Commits
 3. 组件采用Composition API
 4. 类型定义规范遵循TypeScript
+
+## 核心功能
+
+### 1. 商品展示
+- 商品列表展示（分页加载）
+- 商品分类筛选
+- 商品搜索
+- 商品详情展示
+- 商品规格选择
+
+### 2. 购物车
+- 添加商品到购物车
+- 修改商品数量
+- 删除购物车商品
+- 购物车商品统计
+
+### 3. 订单管理
+- 创建订单
+- 订单列表
+- 订单详情
+- 订单状态跟踪
+
+### 4. 在线客服
+- 实时聊天
+- 图片发送
+- 客服管理后台
+- 快捷回复
+
+## 开发指南
+
+### 1. 环境要求
+- Node.js >= 16
+- MySQL >= 8.0
+
+### 2. 安装依赖
+```bash
+# 安装前端依赖
+npm install
+
+# 安装后端依赖
+cd server && npm install
+```
+
+### 3. 数据库配置
+1. 创建数据库
+```sql
+CREATE DATABASE mall CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+```
+
+2. 导入表结构
+```bash
+mysql -u root -p mall < docs/database.md
+```
+
+3. 导入初始数据
+```bash
+mysql -u root -p mall < docs/init_data.sql
+```
+
+### 4. 启动服务
+```bash
+# 启动前端开发服务器
+npm run dev
+
+# 启动后端服务器
+cd server && npm run dev
+```
+
+## API文档
+
+详细的API接口文档请参考 `docs/api.md`
+
+## 数据库设计
+
+数据库表结构设计请参考 `docs/database.md`

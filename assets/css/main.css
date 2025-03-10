@@ -2,22 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 全局CSS变量 */
 :root {
   --van-primary-color: #ff4d8c;
   --theme-pink: #ff4d8c;
+  --theme-pink-light: #ff8eb3;
   --theme-purple: #9c27b0;
   --theme-dark: #1a1a1a;
+  --theme-bg: #1a1a1a;
+  --theme-text: #ffffff;
+}
+
+/* 全局基础样式 */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--theme-bg);
+  color: var(--theme-text);
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d1f3d 100%);
+  min-height: 100vh;
 }
 
 html {
   font-size: 16px;
-  background-color: #1a1a1a;
-  color: #fff;
-}
-
-body {
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d1f3d 100%);
-  min-height: 100vh;
 }
 
 .page-content {
@@ -35,24 +43,48 @@ body {
   box-shadow: 0 -2px 10px rgba(255, 77, 140, 0.1);
 }
 
-/* 自定义动画类 */
+/* 隐藏go-fly客服系统默认按钮 */
+#kefu-icon {
+  display: none !important;
+}
+
+/* 全局动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 全局工具类 */
 .shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: linear-gradient(
     90deg,
-    transparent,
-    rgba(255, 77, 140, 0.1),
-    transparent
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
   );
-  background-size: 200% 100%;
+  transform: translateX(-100%);
   animation: shimmer 2s infinite;
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
   100% {
-    background-position: 200% 0;
+    transform: translateX(100%);
   }
 }
 

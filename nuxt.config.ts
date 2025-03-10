@@ -15,6 +15,7 @@ export default defineNuxtConfig({
 
   vant: {
     /** Vant 配置 */
+    themes: ['dark'],
   },
 
   app: {
@@ -28,5 +29,33 @@ export default defineNuxtConfig({
     }
   },
 
-  compatibilityDate: '2025-03-10'
+  // 开发环境配置
+  devServer: {
+    port: 3000,
+  },
+
+  // 构建配置
+  build: {
+    transpile: ['@vant/nuxt'],
+  },
+
+  compatibilityDate: '2025-03-10',
+
+  // API代理配置
+  nitro: {
+    devProxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        prependPath: true,
+      }
+    }
+  },
+
+  // 生产环境配置
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3000'
+    }
+  }
 })

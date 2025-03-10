@@ -52,6 +52,11 @@
       @buy-now="handleBuyNow"
       @service="handleService"
     />
+
+    <!-- 添加客服按钮 -->
+    <div class="chat-icon" @click="router.push('/chat')">
+      <van-icon name="service-o" size="30" color="#fff" />
+    </div>
   </div>
 </template>
 
@@ -59,173 +64,133 @@
 import ProductDetail from '~/components/ProductDetail.vue'
 import { useCartStore } from '~/stores/cart'
 
-// 模拟数据
-const bannerImages = [
-  'https://example.com/banner1.jpg',
-  'https://example.com/banner2.jpg',
-]
-
-const tags = ['热门', '新品', '特惠', '限定']
-
-const products = [
-  {
-    id: 1,
-    name: '蝴蝶飞舞按摩器',
-    price: 267.00,
-    description: '强震静音，异地互动，APP远程控制，多种模式切换，USB充电，防水设计',
-    images: [
-      'https://example.com/product1-1.jpg',
-      'https://example.com/product1-2.jpg',
-    ],
-    stock: 99,
-    specs: [
-      {
-        name: '颜色',
-        values: ['粉色', '紫色', '黑色']
-      },
-      {
-        name: '震动模式',
-        values: ['标准版', '高级版']
-      }
-    ],
-    skus: [
-      {
-        id: '1-1',
-        specs: ['粉色', '标准版'],
-        price: 267.00,
-        stock: 30
-      },
-      {
-        id: '1-2',
-        specs: ['粉色', '高级版'],
-        price: 367.00,
-        stock: 20
-      },
-      {
-        id: '1-3',
-        specs: ['紫色', '标准版'],
-        price: 267.00,
-        stock: 25
-      },
-      {
-        id: '1-4',
-        specs: ['紫色', '高级版'],
-        price: 367.00,
-        stock: 15
-      },
-      {
-        id: '1-5',
-        specs: ['黑色', '标准版'],
-        price: 267.00,
-        stock: 5
-      },
-      {
-        id: '1-6',
-        specs: ['黑色', '高级版'],
-        price: 367.00,
-        stock: 4
-      }
-    ]
-  },
-  {
-    id: 2,
-    name: '魅惑之夜套装',
-    price: 288.00,
-    description: '15件套精美情趣套装，丝滑材质，舒适贴身，让你的夜晚更加精彩',
-    images: [
-      'https://example.com/product2-1.jpg',
-      'https://example.com/product2-2.jpg',
-    ],
-    stock: 50,
-    specs: [
-      {
-        name: '尺码',
-        values: ['S', 'M', 'L']
-      },
-      {
-        name: '款式',
-        values: ['性感蕾丝', '清纯甜美']
-      }
-    ],
-    skus: [
-      {
-        id: '2-1',
-        specs: ['S', '性感蕾丝'],
-        price: 288.00,
-        stock: 10
-      },
-      {
-        id: '2-2',
-        specs: ['M', '性感蕾丝'],
-        price: 288.00,
-        stock: 15
-      },
-      {
-        id: '2-3',
-        specs: ['L', '性感蕾丝'],
-        price: 288.00,
-        stock: 8
-      },
-      {
-        id: '2-4',
-        specs: ['S', '清纯甜美'],
-        price: 288.00,
-        stock: 12
-      },
-      {
-        id: '2-5',
-        specs: ['M', '清纯甜美'],
-        price: 288.00,
-        stock: 20
-      },
-      {
-        id: '2-6',
-        specs: ['L', '清纯甜美'],
-        price: 288.00,
-        stock: 15
-      }
-    ]
-  },
-  {
-    id: 3,
-    name: '浪漫玫瑰按摩棒',
-    price: 399.00,
-    description: '女性自慰器，静音防水，USB充电，多频震动，医用硅胶材质',
-    images: [
-      'https://example.com/product3-1.jpg',
-      'https://example.com/product3-2.jpg',
-    ],
-    stock: 88
-  },
-]
-
 const router = useRouter()
 const showDetail = ref(false)
-const selectedProduct = ref(products[0])
+const selectedProduct = ref(null)
 const cartStore = useCartStore()
 
+// 页面数据
+const banners = ref([])
+const products = ref([])
+const loading = ref(true)
+const page = ref(1)
+const hasMore = ref(true)
+
+// 获取轮播图数据
+const fetchBanners = async () => {
+  try {
+    const res = await fetch('/api/v1/banners')
+    const data = await res.json()
+    if (data.code === 0) {
+      banners.value = data.data
+    }
+  } catch (error) {
+    console.error('获取轮播图失败:', error)
+  }
+}
+
+// 获取商品列表
+const fetchProducts = async (isLoadMore = false) => {
+  if (!isLoadMore) {
+    page.value = 1
+    products.value = []
+  }
+  
+  try {
+    loading.value = true
+    const res = await fetch(`/api/v1/products?page=${page.value}&limit=10`)
+    const data = await res.json()
+    if (data.code === 0) {
+      if (isLoadMore) {
+        products.value.push(...data.data.items)
+      } else {
+        products.value = data.data.items
+      }
+      hasMore.value = data.data.items.length === 10
+    }
+  } catch (error) {
+    console.error('获取商品列表失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载更多
+const loadMore = () => {
+  if (loading.value || !hasMore.value) return
+  page.value++
+  fetchProducts(true)
+}
+
+// 显示商品详情
 const showProductDetail = (product: any) => {
   selectedProduct.value = product
   showDetail.value = true
 }
 
-const handleAddToCart = ({ product, sku, quantity }: any) => {
-  cartStore.addToCart(product, sku, quantity)
-  showDetail.value = false
-  // 显示成功提示
-  const toast = useToast()
-  toast.success('已加入购物车')
+// 添加到购物车
+const handleAddToCart = async ({ product, sku, quantity }: any) => {
+  try {
+    const res = await fetch('/api/v1/cart/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        product_id: product.id,
+        sku_id: sku.id,
+        quantity
+      })
+    })
+    const data = await res.json()
+    if (data.code === 0) {
+      showDetail.value = false
+      const toast = useToast()
+      toast.success('已加入购物车')
+      // 更新购物车数量
+      cartStore.updateCount(data.data.cart_count)
+    }
+  } catch (error) {
+    console.error('添加购物车失败:', error)
+    const toast = useToast()
+    toast.fail('添加失败，请重试')
+  }
 }
 
-const handleBuyNow = ({ product, quantity }: any) => {
+// 立即购买
+const handleBuyNow = ({ product, sku, quantity }: any) => {
   showDetail.value = false
-  router.push('/cart')
+  router.push({
+    path: '/order/confirm',
+    query: {
+      product_id: product.id,
+      sku_id: sku.id,
+      quantity
+    }
+  })
 }
 
+// 联系客服
 const handleService = (product: any) => {
   showDetail.value = false
   router.push('/chat')
 }
+
+// 监听滚动加载更多
+const { y } = useScroll(window)
+watch(y, (newY) => {
+  const scrollHeight = document.documentElement.scrollHeight
+  const clientHeight = document.documentElement.clientHeight
+  if (newY + clientHeight >= scrollHeight - 50) {
+    loadMore()
+  }
+})
+
+// 初始化数据
+onMounted(() => {
+  fetchBanners()
+  fetchProducts()
+})
 </script>
 
 <style scoped>
@@ -357,5 +322,31 @@ const handleService = (product: any) => {
   font-size: 16px;
   color: var(--theme-pink);
   font-weight: bold;
+}
+
+.chat-icon {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #ff4d8c 0%, #ff8eb3 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 999;
+}
+
+.chat-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.chat-icon:active {
+  transform: scale(0.95);
 }
 </style> 
