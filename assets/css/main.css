@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --van-primary-color: #ff4d8c;
+  --theme-pink: #ff4d8c;
+  --theme-purple: #9c27b0;
+  --theme-dark: #1a1a1a;
+}
+
+html {
+  font-size: 16px;
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+body {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d1f3d 100%);
+  min-height: 100vh;
+}
+
+.page-content {
+  padding-bottom: 50px;
+}
+
+.fixed-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background-color: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 -2px 10px rgba(255, 77, 140, 0.1);
+}
+
+/* 自定义动画类 */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 77, 140, 0.1),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* 主题覆盖 */
+:deep(.van-tabbar) {
+  background-color: transparent;
+}
+
+:deep(.van-tabbar-item) {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+:deep(.van-tabbar-item--active) {
+  color: var(--theme-pink);
+} 
